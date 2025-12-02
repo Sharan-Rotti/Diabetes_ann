@@ -1,68 +1,4 @@
-# import streamlit as st
-# import pandas as pd
-# import numpy as np
-# import joblib
-# from sklearn.preprocessing import StandardScaler
 
-# # -----------------------------
-# # Load Model and Scaler
-# # -----------------------------
-# @st.cache_resource
-# def load_model():
-#     model = joblib.load("model.pkl")  # Your trained model file
-#     scaler = joblib.load("scaler.pkl")  # Scaler if used
-#     return model, scaler
-
-# model, scaler = load_model('trail_model_dibates.keras')
-
-# # -----------------------------
-# # Streamlit UI
-# # -----------------------------
-# st.title("🔍 Diabetes Prediction App")
-# st.write("Upload your dataset or enter patient values manually.")
-
-# # -----------------------------
-# # File Upload Section
-# # -----------------------------
-# uploaded_file = st.file_uploader("Upload Excel/CSV file", type=["csv", "xlsx"])
-
-# if uploaded_file is not None:
-#     try:
-#         if uploaded_file.name.endswith(".csv"):
-#             df = pd.read_csv(uploaded_file)
-#         else:
-#             df = pd.read_excel(uploaded_file)
-
-#         st.success("File Uploaded Successfully!")
-#         st.dataframe(df.head())
-
-#     except Exception as e:
-#         st.error(f"Error reading file: {e}")
-
-# # -----------------------------
-# # Manual Input Section
-# # -----------------------------
-# st.subheader("Enter Patient Details")
-
-# preg = st.number_input("Pregnancies", 0, 20, 1)
-# glucose = st.number_input("Glucose Level", 0, 300, 120)
-# bp = st.number_input("Blood Pressure", 0, 200, 70)
-# skin = st.number_input("Skin Thickness", 0, 100, 20)
-# insulin = st.number_input("Insulin Level", 0, 900, 85)
-# bmi = st.number_input("BMI", 0.0, 70.0, 22.5)
-# dpf = st.number_input("Diabetes Pedigree Function", 0.0, 3.0, 0.5)
-# age = st.number_input("Age", 1, 120, 30)
-
-# input_data = np.array([[preg, glucose, bp, skin, insulin, bmi, dpf, age]])
-
-# if st.button("Predict"):
-#     scaled_input = scaler.transform(input_data)
-#     prediction = model.predict(scaled_input)
-
-#     if prediction[0] == 1:
-#         st.error("⚠️ High Risk of Diabetes")
-#     else:
-#         st.success("✅ Low Risk of Diabetes")
 
 
 
@@ -118,23 +54,46 @@ tab1, tab2 = st.tabs(["📊 Data Explorer", "🔮 Predict Diabetes Status"])
 # ==========================================
 # TAB 1: DATA EXPLORER
 # ==========================================
-with tab1:
-    if not df.empty:
-        st.header("Dataset Overview")
-        st.write(f"Data loaded successfully with {len(df)} rows.")
+import pandas as pd
+import matplotlib.pyplot as plt
 
-        if st.checkbox("Show Raw Data Sample"):
-            st.dataframe(df.head())
+# Load data
+df = pd.read_csv("health_diabetes.csv")
 
-        st.subheader("Distribution of Diabetes Status")
-        st.markdown("0: No Diabetes | 1: Prediabetes | 2: Diabetes")
-        
-        # Plot
-        fig, ax = plt.subplots(figsize=(8, 4))
-        sns.countplot(x='Diabetes_012', data=df, palette='viridis', ax=ax)
-        st.pyplot(fig)
-    else:
-        st.warning("Please ensure the CSV file is in the directory.")
+# Calculate correlation with Diabetes_012
+# We use numeric conversion just in case, though data seems float64 already
+correlations = df.corr()['Diabetes_012'].drop('Diabetes_012')
+
+# Sort by absolute values to find the "strongest" relationships (positive or negative)
+top_10_corr = correlations.abs().sort_values(ascending=False).head(10)
+
+# Get the actual correlation values (with sign) for these top 10
+top_10_actual = correlations[top_10_corr.index]
+
+# Sort them for plotting logic (e.g., highest positive to lowest or vice versa)
+# Let's sort by the actual value for the visual
+top_10_actual_sorted = top_10_actual.sort_values(ascending=True)
+
+print("Top 10 Correlated Features:")
+print(top_10_actual_sorted)
+
+# Create the plot using pure Matplotlib
+plt.figure(figsize=(10, 6))
+# Create a horizontal bar plot
+bars = plt.barh(top_10_actual_sorted.index, top_10_actual_sorted.values, color='skyblue')
+
+# Add values to the end of the bars
+for bar in bars:
+    width = bar.get_width()
+    label_x_pos = width if width > 0 else width - 0.05
+    plt.text(label_x_pos, bar.get_y() + bar.get_height()/2, f'{width:.2f}', 
+             va='center', ha='left' if width > 0 else 'right')
+
+plt.title('Top 10 Features Correlated with Diabetes', fontsize=16)
+plt.xlabel('Correlation Coefficient', fontsize=12)
+plt.grid(axis='x', linestyle='--', alpha=0.7)
+plt.tight_layout()
+plt.savefig('top10_correlation.png')
 
 # ==========================================
 # TAB 2: PREDICTION
