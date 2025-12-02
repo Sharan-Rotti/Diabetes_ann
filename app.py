@@ -54,42 +54,124 @@ tab1, tab2 = st.tabs(["📊 Data Explorer", "🔮 Predict Diabetes Status"])
 # ==========================================
 # TAB 1: DATA EXPLORER
 # ==========================================
-st.header("Top 10 Factors Associated with Diabetes")
-st.write("This chart shows which features have the strongest correlation with Diabetes.")
+def plot_1_target_distribution(df):
+    plt.figure(figsize=(7, 5))
+    sns.countplot(x='Diabetes_Status', data=df, palette='viridis')
+    plt.title('Plot 1: Distribution of Diabetes Status', fontsize=16)
+    plt.xlabel('Diabetes Status', fontsize=12)
+    plt.ylabel('Count', fontsize=12)
+    plt.tight_layout()
+    return plt.gcf()
 
-# 1. Calculate correlations
-# Drop the target column to calculate correlations against it
-corr_matrix = df.corr()
-diabetes_corr = corr_matrix['Diabetes_012'].drop('Diabetes_012')
+def plot_2_top_10_correlation(df):
+    corr_matrix = df.corr()
+    diabetes_corr = corr_matrix['Diabetes_012'].drop('Diabetes_012')
+    top_10 = diabetes_corr.abs().sort_values(ascending=False).head(10)
+    top_10_features = diabetes_corr[top_10.index].sort_values()
 
-# 2. Get Top 10 Absolute Correlations
-# We use abs() because strong negative factors (like Income) are just as important as positive ones
-top_10 = diabetes_corr.abs().sort_values(ascending=False).head(10)
-# Retrieve the original signed values for the plot
-top_10_features = diabetes_corr[top_10.index].sort_values()
+    fig, ax = plt.subplots(figsize=(10, 6))
+    bars = ax.barh(top_10_features.index, top_10_features.values, color='#4c72b0')
 
-# 3. Plot with Matplotlib
-fig, ax = plt.subplots(figsize=(10, 6))
+    ax.set_title('Plot 2: Top 10 Features Correlated with Diabetes', fontsize=16)
+    ax.set_xlabel('Correlation Coefficient (Pearson)', fontsize=12)
+    ax.axvline(0, color='gray', linewidth=0.8)
+    ax.grid(axis='x', linestyle='--', alpha=0.5)
 
-# Create horizontal bars
-bars = ax.barh(top_10_features.index, top_10_features.values, color='#4c72b0')
+    for bar in bars:
+        width = bar.get_width()
+        label_x_pos = width + 0.01 if width > 0 else width - 0.04
+        ax.text(label_x_pos, bar.get_y() + bar.get_height()/2, 
+                f'{width:.2f}', va='center', fontsize=10)
+    
+    plt.tight_layout()
+    return plt.gcf()
 
-# Add labels to bars
-for bar in bars:
-    width = bar.get_width()
-    # Logic to place label to the right of positive bars and left of negative bars
-    label_x_pos = width + 0.01 if width > 0 else width - 0.04
-    ax.text(label_x_pos, bar.get_y() + bar.get_height()/2, 
-            f'{width:.2f}', va='center', fontsize=10)
+def plot_3_bmi_distribution(df):
+    plt.figure(figsize=(9, 5))
+    sns.histplot(df['BMI'], bins=50, kde=True, color='darkcyan')
+    plt.title('Plot 3: Distribution of Body Mass Index (BMI)', fontsize=16)
+    plt.xlabel('BMI', fontsize=12)
+    plt.ylabel('Frequency', fontsize=12)
+    plt.tight_layout()
+    return plt.gcf()
 
-# Customizing the chart
-ax.set_title('Top 10 Features Correlated with Diabetes_012', fontsize=16)
-ax.set_xlabel('Correlation Coefficient (Pearson)', fontsize=12)
-ax.axvline(0, color='gray', linewidth=0.8)  # Add a vertical line at 0
-ax.grid(axis='x', linestyle='--', alpha=0.5)
+def plot_4_bmi_vs_diabetes(df):
+    plt.figure(figsize=(10, 6))
+    sns.boxplot(x='Diabetes_Status', y='BMI', data=df, palette='Spectral')
+    plt.title('Plot 4: BMI Distribution by Diabetes Status', fontsize=16)
+    plt.xlabel('Diabetes Status', fontsize=12)
+    plt.ylabel('Body Mass Index (BMI)', fontsize=12)
+    plt.tight_layout()
+    return plt.gcf()
 
-# Display in Streamlit
-st.pyplot(fig)
+def plot_5_age_vs_diabetes(df):
+    age_diabetes_counts = df.groupby(['Age_Group', 'Diabetes_Status']).size().unstack(fill_value=0)
+    age_diabetes_proportions = age_diabetes_counts.apply(lambda x: x / x.sum(), axis=1) * 100
+
+    fig, ax = plt.subplots(figsize=(12, 6))
+    age_diabetes_proportions.plot(kind='bar', stacked=True, colormap='viridis', ax=ax)
+    
+    plt.title('Plot 5: Distribution of Diabetes Status Across Age Groups (Proportions)', fontsize=16)
+    plt.xlabel('Age Group', fontsize=12)
+    plt.ylabel('Percentage within Age Group', fontsize=12)
+    plt.xticks(rotation=45, ha='right')
+    plt.legend(title='Diabetes Status', loc='upper left')
+    plt.tight_layout()
+    return plt.gcf()
+
+def plot_6_genhlth_vs_diabetes(df):
+    plt.figure(figsize=(10, 6))
+    sns.countplot(x='GenHlth_Label', hue='Diabetes_Status', data=df, 
+                  order=['Excellent', 'Very Good', 'Good', 'Fair', 'Poor'], palette='magma')
+    plt.title('Plot 6: Diabetes Status Counts by Self-Reported General Health', fontsize=16)
+    plt.xlabel('Self-Reported General Health', fontsize=12)
+    plt.ylabel('Count', fontsize=12)
+    plt.legend(title='Diabetes Status')
+    plt.tight_layout()
+    return plt.gcf()
+
+def plot_7_highbp_vs_diabetes(df):
+    plt.figure(figsize=(8, 5))
+    sns.heatmap(pd.crosstab(df['HighBP'], df['Diabetes_Status'], normalize='index'), 
+                annot=True, fmt=".1%", cmap="YlOrRd", cbar=False,
+                yticklabels=['No HighBP', 'HighBP'])
+    plt.title('Plot 7: Proportion of Diabetes Status by High Blood Pressure', fontsize=16)
+    plt.xlabel('Diabetes Status', fontsize=12)
+    plt.ylabel('High Blood Pressure', fontsize=12)
+    plt.tight_layout()
+    return plt.gcf()
+
+def plot_8_physhlth_vs_diabetes(df):
+    plt.figure(figsize=(10, 6))
+    sns.violinplot(x='Diabetes_Status', y='PhysHlth', data=df, palette='cubehelix', inner='quartile')
+    plt.title('Plot 8: Physical Health (Days of Poor Health) Distribution by Diabetes Status', fontsize=16)
+    plt.xlabel('Diabetes Status', fontsize=12)
+    plt.ylabel('Days of Poor Physical Health (Past 30 Days)', fontsize=12)
+    plt.ylim(0, 31)
+    plt.tight_layout()
+    return plt.gcf()
+
+def plot_9_sex_vs_diabetes(df):
+    plt.figure(figsize=(8, 5))
+    sns.heatmap(pd.crosstab(df['Sex_Label'], df['Diabetes_Status'], normalize='index'), 
+                annot=True, fmt=".1%", cmap="Blues", cbar=False)
+    plt.title('Plot 9: Proportion of Diabetes Status by Sex', fontsize=16)
+    plt.xlabel('Diabetes Status', fontsize=12)
+    plt.ylabel('Sex', fontsize=12)
+    plt.tight_layout()
+    return plt.gcf()
+
+def plot_10_income_vs_diabetes(df):
+    plt.figure(figsize=(10, 6))
+    income_prevalence = df[df['Diabetes_012'] == 2.0].groupby('Income').size() / df.groupby('Income').size() * 100
+    income_prevalence = income_prevalence.fillna(0).sort_index()
+
+    sns.barplot(x=income_prevalence.index, y=income_prevalence.values, palette='RdYlGn_r')
+    plt.title('Plot 10: Diabetes Prevalence by Income Category (1=Low, 8=High)', fontsize=16)
+    plt.xlabel('Income Category', fontsize=12)
+    plt.ylabel('Percentage with Diabetes', fontsize=12)
+    plt.tight_layout()
+    return plt.gcf()
 
 # ==========================================
 # TAB 2: PREDICTION
