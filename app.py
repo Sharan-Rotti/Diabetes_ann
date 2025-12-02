@@ -54,46 +54,42 @@ tab1, tab2 = st.tabs(["📊 Data Explorer", "🔮 Predict Diabetes Status"])
 # ==========================================
 # TAB 1: DATA EXPLORER
 # ==========================================
-import pandas as pd
-import matplotlib.pyplot as plt
+st.header("Top 10 Factors Associated with Diabetes")
+st.write("This chart shows which features have the strongest correlation with Diabetes.")
 
-# Load data
-df = pd.read_csv("health_diabetes.csv")
+# 1. Calculate correlations
+# Drop the target column to calculate correlations against it
+corr_matrix = df.corr()
+diabetes_corr = corr_matrix['Diabetes_012'].drop('Diabetes_012')
 
-# Calculate correlation with Diabetes_012
-# We use numeric conversion just in case, though data seems float64 already
-correlations = df.corr()['Diabetes_012'].drop('Diabetes_012')
+# 2. Get Top 10 Absolute Correlations
+# We use abs() because strong negative factors (like Income) are just as important as positive ones
+top_10 = diabetes_corr.abs().sort_values(ascending=False).head(10)
+# Retrieve the original signed values for the plot
+top_10_features = diabetes_corr[top_10.index].sort_values()
 
-# Sort by absolute values to find the "strongest" relationships (positive or negative)
-top_10_corr = correlations.abs().sort_values(ascending=False).head(10)
+# 3. Plot with Matplotlib
+fig, ax = plt.subplots(figsize=(10, 6))
 
-# Get the actual correlation values (with sign) for these top 10
-top_10_actual = correlations[top_10_corr.index]
+# Create horizontal bars
+bars = ax.barh(top_10_features.index, top_10_features.values, color='#4c72b0')
 
-# Sort them for plotting logic (e.g., highest positive to lowest or vice versa)
-# Let's sort by the actual value for the visual
-top_10_actual_sorted = top_10_actual.sort_values(ascending=True)
-
-print("Top 10 Correlated Features:")
-print(top_10_actual_sorted)
-
-# Create the plot using pure Matplotlib
-plt.figure(figsize=(10, 6))
-# Create a horizontal bar plot
-bars = plt.barh(top_10_actual_sorted.index, top_10_actual_sorted.values, color='skyblue')
-
-# Add values to the end of the bars
+# Add labels to bars
 for bar in bars:
     width = bar.get_width()
-    label_x_pos = width if width > 0 else width - 0.05
-    plt.text(label_x_pos, bar.get_y() + bar.get_height()/2, f'{width:.2f}', 
-             va='center', ha='left' if width > 0 else 'right')
+    # Logic to place label to the right of positive bars and left of negative bars
+    label_x_pos = width + 0.01 if width > 0 else width - 0.04
+    ax.text(label_x_pos, bar.get_y() + bar.get_height()/2, 
+            f'{width:.2f}', va='center', fontsize=10)
 
-plt.title('Top 10 Features Correlated with Diabetes', fontsize=16)
-plt.xlabel('Correlation Coefficient', fontsize=12)
-plt.grid(axis='x', linestyle='--', alpha=0.7)
-plt.tight_layout()
-plt.savefig('top10_correlation.png')
+# Customizing the chart
+ax.set_title('Top 10 Features Correlated with Diabetes_012', fontsize=16)
+ax.set_xlabel('Correlation Coefficient (Pearson)', fontsize=12)
+ax.axvline(0, color='gray', linewidth=0.8)  # Add a vertical line at 0
+ax.grid(axis='x', linestyle='--', alpha=0.5)
+
+# Display in Streamlit
+st.pyplot(fig)
 
 # ==========================================
 # TAB 2: PREDICTION
