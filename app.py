@@ -13,7 +13,7 @@ def load_model():
     scaler = joblib.load("scaler.pkl")  # Scaler if used
     return model, scaler
 
-model, scaler = load_model()
+model, scaler = load_model('trail_model_dibates.keras')
 
 # -----------------------------
 # Streamlit UI
