@@ -338,7 +338,7 @@ if not df.empty and model is not None:
             submitted = st.form_submit_button("Predict Diabetes Status")
 
         if submitted:
-            # Order must exactly match training feature order
+    # Order must exactly match training feature order
             input_data = np.array(
                 [[
                     high_bp, high_chol, chol_check, bmi, smoker, stroke, heart_disease,
@@ -346,27 +346,41 @@ if not df.empty and model is not None:
                     gen_hlth, ment_hlth, phys_hlth, diff_walk, sex, age, education, income
                 ]]
             )
-
+        
             try:
                 prediction_probs = model.predict(input_data)
-                prediction_class = int(np.argmax(prediction_probs, axis=1)[0])
-
+        
+                # Detect if the model is binary (1 output neuron) or multiclass (e.g., 3 outputs)
+                output_dim = model.output_shape[-1]
+        
                 st.markdown("### Prediction Result:")
-
-                if prediction_class == 0:
-                    st.success("**Result: No Diabetes** (Class 0)")
-                elif prediction_class == 1:
-                    st.warning("**Result: Prediabetes** (Class 1)")
+        
+                if output_dim == 1:
+                    # 🔹 Binary model: prediction_probs is shape (1, 1)
+                    prob = float(prediction_probs[0][0])
+        
+                    # You can change this threshold if you want (e.g. 0.4 / 0.6)
+                    if prob < 0.5:
+                        st.success(f"**Result: No Diabetes** (probability of diabetes = {prob:.2f})")
+                    else:
+                        st.error(f"**Result: Diabetes / At Risk** (probability = {prob:.2f})")
+        
                 else:
-                    st.error("**Result: Diabetes** (Class 2)")
-
-                # ✅ Removed tabular probabilities 'value' output
-                # (Keep this if you ever want them back as text)
-                # st.text(f"Probabilities: {prediction_probs}")
-
+                    # 🔹 Multiclass model: e.g. softmax with 3 outputs
+                    prediction_class = int(np.argmax(prediction_probs, axis=1)[0])
+        
+                    if prediction_class == 0:
+                        st.success("**Result: No Diabetes** (Class 0)")
+                    elif prediction_class == 1:
+                        st.warning("**Result: Prediabetes** (Class 1)")
+                    else:
+                        st.error("**Result: Diabetes** (Class 2)")
+        
+                # No DataFrame / 'value' table shown anymore
+        
             except Exception as e:
                 st.error(f"Error during prediction: {e}")
-
++
     # ==========================
     # TAB 3: EDA PLOTS
     # ==========================
