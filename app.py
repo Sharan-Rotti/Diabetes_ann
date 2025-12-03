@@ -324,16 +324,7 @@ if not df.empty and model is not None:
             with col5:
                 education = st.slider("Education Level (1-6)", 1, 6, 4)
                 income = st.slider("Income Scale (1-8)", 1, 8, 5)
-                any_healthcare = st.selectbox(
-                    "Have any Healthcare coverage?",
-                    options=[0, 1],
-                    format_func=lambda x: binary_map[x],
-                )
-                no_doc_cost = st.selectbox(
-                    "Skipped Doctor due to cost?",
-                    options=[0, 1],
-                    format_func=lambda x: binary_map[x],
-                )
+                
 
             submitted = st.form_submit_button("Predict Diabetes Status")
 
