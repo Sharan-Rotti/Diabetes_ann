@@ -380,7 +380,7 @@ if not df.empty and model is not None:
         
             except Exception as e:
                 st.error(f"Error during prediction: {e}")
-+
+
     # ==========================
     # TAB 3: EDA PLOTS
     # ==========================
