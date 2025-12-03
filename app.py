@@ -316,20 +316,30 @@ if not df.empty and model is not None:
             st.markdown("---")
 
             # Extra inputs row
+                    # Extra inputs row
             col4, col5 = st.columns(2)
             with col4:
-                ment_hlth = st.slider("Days of Poor Mental Health (past 30 days)", 0, 30, 0)
-                phys_hlth = st.slider("Days of Poor Physical Health (past 30 days)", 0, 30, 0)
-
+                ment_hlth = st.slider(
+                    "Days of Poor Mental Health (past 30 days)", 0, 30, 0
+                )
+                phys_hlth = st.slider(
+                    "Days of Poor Physical Health (past 30 days)", 0, 30, 0
+                )
+    
             with col5:
                 education = st.slider("Education Level (1-6)", 1, 6, 4)
                 income = st.slider("Income Scale (1-8)", 1, 8, 5)
-                
-
+    
             submitted = st.form_submit_button("Predict Diabetes Status")
-
+    
         if submitted:
-    # Order must exactly match training feature order
+            # ⚠️ We no longer ask the user for these,
+            # but the model still expects them in the input.
+            # Set them to a default value (0 = No).
+            any_healthcare = 0
+            no_doc_cost = 0
+    
+            # Order must exactly match training feature order
             input_data = np.array(
                 [[
                     high_bp, high_chol, chol_check, bmi, smoker, stroke, heart_disease,
@@ -337,90 +347,41 @@ if not df.empty and model is not None:
                     gen_hlth, ment_hlth, phys_hlth, diff_walk, sex, age, education, income
                 ]]
             )
-        
+    
             try:
                 prediction_probs = model.predict(input_data)
-        
+    
                 # Detect if the model is binary (1 output neuron) or multiclass (e.g., 3 outputs)
                 output_dim = model.output_shape[-1]
-        
+    
                 st.markdown("### Prediction Result:")
-        
+    
                 if output_dim == 1:
                     # 🔹 Binary model: prediction_probs is shape (1, 1)
                     prob = float(prediction_probs[0][0])
-        
+    
                     # You can change this threshold if you want (e.g. 0.4 / 0.6)
                     if prob < 0.5:
-                        st.success(f"**Result: No Diabetes** (probability of diabetes = {prob:.2f})")
+                        st.success(
+                            f"**Result: No Diabetes** "
+                            f"(probability of diabetes = {prob:.2f})"
+                        )
                     else:
-                        st.error(f"**Result: Diabetes / At Risk** (probability = {prob:.2f})")
-        
+                        st.error(
+                            f"**Result: Diabetes / At Risk** "
+                            f"(probability = {prob:.2f})"
+                        )
+    
                 else:
                     # 🔹 Multiclass model: e.g. softmax with 3 outputs
                     prediction_class = int(np.argmax(prediction_probs, axis=1)[0])
-        
+    
                     if prediction_class == 0:
                         st.success("**Result: No Diabetes** (Class 0)")
                     elif prediction_class == 1:
                         st.warning("**Result: Prediabetes** (Class 1)")
                     else:
                         st.error("**Result: Diabetes** (Class 2)")
-        
-                # No DataFrame / 'value' table shown anymore
-        
+    
             except Exception as e:
                 st.error(f"Error during prediction: {e}")
-
-    # ==========================
-    # TAB 3: EDA PLOTS
-    # ==========================
-    with tab3:
-        st.header("3. Comprehensive Exploratory Data Analysis (EDA) Plots")
-        st.markdown(
-            "These charts highlight key distributions and relationships with diabetes status."
-        )
-
-        # 🔢 Plots 1 & 2
-        col1, col2 = st.columns(2)
-        with col1:
-            st.pyplot(plot_1_target_distribution(df))
-        with col2:
-            fig2 = plot_2_top_10_correlation(df)
-            if fig2 is not None:
-                st.pyplot(fig2)
-            else:
-                st.info("Correlation with 'Diabetes_012' could not be computed.")
-
-        st.markdown("---")
-
-        # 🔢 Plots 3 & 4
-        col3, col4 = st.columns(2)
-        with col3:
-            st.pyplot(plot_3_bmi_distribution(df))
-        with col4:
-            st.pyplot(plot_4_bmi_vs_diabetes(df))
-
-        st.markdown("---")
-
-        # 🔢 Plots 5 & 6
-        col5, col6 = st.columns(2)
-        with col5:
-            st.pyplot(plot_5_age_vs_diabetes(df))
-        with col6:
-            st.pyplot(plot_6_genhlth_vs_diabetes(df))
-
-        st.markdown("---")
-
-        # 🔢 Plots 7 & 8
-        col7, col8 = st.columns(2)
-        with col7:
-            st.pyplot(plot_7_highbp_vs_diabetes(df))
-        with col8:
-            st.pyplot(plot_8_physhlth_vs_diabetes(df))
-
-else:
-    st.warning(
-        "Please ensure both `health_diabetes.csv` and "
-        "`trail_model_diabetes.keras` are correctly placed in the app's directory."
-    )
